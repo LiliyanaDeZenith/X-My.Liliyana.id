@@ -1,6 +1,7 @@
 // My Liliyana server. Jalankan: node server.js
 const http=require('http'),fs=require('fs'),path=require('path'),crypto=require('crypto');
 const PORT=process.env.PORT||3000,F=path.join(__dirname,'data.json'),UP=path.join(__dirname,'uploads');
+const NEXUS_URL="https://nexus-sealyn-ai-deve-m9l5.bolt.host/";
 fs.mkdirSync(UP,{recursive:true});
 let D={users:{},follow:{},q:{},g:[],posts:[],m:{}};
 try{D={...D,...JSON.parse(fs.readFileSync(F,'utf8'))}}catch{}
@@ -77,6 +78,15 @@ http.createServer(async(req,res)=>{try{
   if(p==='send'){if(!D.users[b.to]||!mutual(h,b.to))return json({error:'403'},403);if(typeof b.iv!=='string'||typeof b.ct!=='string'||b.ct.length>20000)return json({error:'bad'},400);to(b.to,'msg',{from:h,iv:b.iv,ct:b.ct,t:Date.now()});return json({ok:1})}
   if(p==='global'){const text=String(b.text||'').slice(0,1000),m=medObj(b.m,h);if(!text.trim()&&!m)return json({error:'empty'},400);const o={from:h,name:us.name,text,m,t:Date.now()};D.g.push(o);D.g=D.g.slice(-50);save();all('global',o);return json({ok:1})}
   if(p==='deact'){delete D.users[h];delete D.follow[h];for(const k in D.follow)D.follow[k]=D.follow[k].filter(x=>x!==h);D.posts=D.posts.filter(x=>x.a!==h);delete D.q[h];save();all('user',{handle:h,gone:1});return json({ok:1})}
+  if(p==='nexus'){
+   const msg=String(b.message||b.text||'').slice(0,2000);
+   if(!msg.trim())return json({error:'empty'},400);
+   try{
+    const r=await fetch(NEXUS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+    const j=await r.json().catch(()=>({reply:r.statusText}));
+    return json(j);
+   }catch(e){return json({reply:'Nexus offline'},500);}
+  }
   return json({error:'404'},404)}
  const n=P==='/'?'index.html':P.slice(1);
  if(!['index.html','style.css','app.js'].includes(n)){res.statusCode=404;return res.end('404')}
